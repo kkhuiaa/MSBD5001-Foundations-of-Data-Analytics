@@ -1,7 +1,10 @@
 """
-Step 1:
+Step 1: Feature generation: create feature including log, sqrt, power, multiplication, division exponential etc
+Step 2: Feature transformation: transforming categorical varaible, standardation, PCA
+Step 3: Feature selection: Recursive Feature Elimination (RFE)
+Step 4: Model development: develop DNN model in keras with scikit-learn API. Gridsearch is performed to tune the optimal hyperparameter set
+Step 5: Evaluation: Model is applied on test.csv
 """
-
 import time
 import pickle as p
 import numpy as np
@@ -60,9 +63,8 @@ def create_feature(df):
     pandas.DataFrame
         the transformed data
     """
-
-    df.drop(['id', 'random_state'], axis=1, inplace=True)
-    df['n_jobs'] = np.where(df['n_jobs']==-1, 10, df['n_jobs'])
+    df.drop(['id', 'random_state'], axis=1, inplace=True) #drop the id and random_state since it is useless in predicting time
+    df['n_jobs'] = np.where(df['n_jobs']==-1, 10, df['n_jobs']) #n_jobs = -1 is greater than 8
     numerator_list_before = ['n_samples', 'max_iter', 'n_features', 'n_informative', 'n_classes', 'n_clusters_per_class']
     denominator_list_before = ['n_jobs', 'n_classes', 'alpha', 'n_clusters_per_class', 'penalty']
     for col in numerator_list_before+denominator_list_before:
@@ -129,7 +131,7 @@ def main(train0, test, random_state=37):
     X_train = train_scalez1[:400]
     print(X_train.shape) #(400, 3849)
 
-    from genlib.ml import feature_selection_by_rfe as fsr
+    from script import feature_selection_by_rfe as fsr
     feature_table_rfe = fsr.feature_selection_by_rfe(X_train, y_train, [XGBRegressor]
         , cv=3, n_jobs=-1, scoring=make_scorer(mean_squared_error, greater_is_better=False)
         , random_state=random_state, plot_directory='evaluation/rfe/', plot_file_name='rfe_433', show_plot=True)
@@ -153,11 +155,31 @@ def main(train0, test, random_state=37):
 
     seed = random_state
     def create_baseline(dropout_rate=0.3, l2=0, optimizer='Adam', activation='elu', maxnorm=5):
+        """Apply keras sequential model
+        
+        Parameters
+        ----------
+        dropout_rate : float, optional
+            keras.layers.Dropout
+        l2 : float, optional
+            keras.regularizers.l2
+        optimizer : str, optional
+            An optimizer is one of the two arguments required for compiling a Keras model
+        activation : str, optional
+            keras activation function
+        maxnorm : int, optional
+            MaxNorm weight constraint. Constrains the weights incident to each hidden unit to have a norm less than or equal to a desired value.
+        
+        Returns
+        -------
+        keras.model.Model
+            output model
+        """
         model = Sequential() # create model
         model.add(Dense(30, input_dim=len(X_train.columns), activation='elu', kernel_regularizer=regularizers.l2(l2)))
         model.add(BatchNormalization()) #Normalize the activations of the previous layer at each batch, i.e. applies a transformation that maintains the mean activation close to 0 and the activation standard deviation close to 1.
         model.add(Dropout(dropout_rate)) #drop_rate avoid overfitting
-        model.add(Dense(60, activation='elu', kernel_regularizer=regularizers.l2(l2)))
+        model.add(Dense(60, activation='elu', kernel_regularizer=regularizers.l2(l2))) #elu usually provides better result
         model.add(BatchNormalization())
         model.add(Dropout(dropout_rate))
         model.add(Dense(45, activation='elu', kernel_regularizer=regularizers.l2(l2)))
@@ -195,7 +217,6 @@ def main(train0, test, random_state=37):
     print('best train std:', gridsearch.cv_results_['std_train_score'][best_position])
     print('best test score:', -gridsearch.cv_results_['mean_test_score'][best_position])
     print('best test std:', gridsearch.cv_results_['std_test_score'][best_position])
-
     # time: 871.08
     # best params: {'dropout_rate': 0.1, 'epochs': 500, 'l2': 0.3}
     # best train score: 1.2951904441069788
@@ -236,7 +257,7 @@ def main(train0, test, random_state=37):
     # Name: time_p, dtype: float64
 
     submission = submission.rename(columns={'time_p': 'time'})
-    submission.to_csv('kkhuiaa_20123133_prediction.csv', index=False)
+    submission.to_csv('kkhuiaa_20123133_prediction.csv', index=False) #save the output
 
 if __name__ == "__main__":
     main(train0=pd.read_csv('data/train.csv'), test = pd.read_csv('data/test.csv'))
