@@ -5,6 +5,10 @@ Step 3: Feature selection: Recursive Feature Elimination (RFE)
 Step 4: Model development: develop DNN model in keras with scikit-learn API. Gridsearch is performed to tune the optimal hyperparameter set
 Step 5: Evaluation: Model is applied on test.csv
 """
+#%%
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 import time
 import pickle as p
 import numpy as np
