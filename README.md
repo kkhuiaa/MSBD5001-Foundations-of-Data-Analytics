@@ -44,4 +44,4 @@ The main.py can be run as normal .py file. If you want to test another testing f
 The scipt follows [pip8](https://www.python.org/dev/peps/pep-0008/) standard python notation.
 
 ## Authors
-* **Hui Kwat Kong** - *20123133* - *kkhuiaa*
+* **Jay**
